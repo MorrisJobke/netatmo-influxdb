@@ -106,15 +106,15 @@ def iterateStations(access_token):
     for station in stations:
         printStation(station)
         for measurement_type in station['data_type']:
-            fetchMeasurements(access_token, station['_id'], "", measurement_type, station['station_name'], station['module_name'], client)
+            fetchMeasurements(access_token, station['_id'], "", measurement_type, station['station_name'], station['module_name'], client, station['last_status_store'])
 
         print('Modules:')
         for substation in station['modules']:
             printStation(substation)
             for measurement_type in substation['data_type']:
-                fetchMeasurements(access_token, station['_id'], substation['_id'], measurement_type, station['station_name'], substation['module_name'], client)
+                fetchMeasurements(access_token, station['_id'], substation['_id'], measurement_type, station['station_name'], substation['module_name'], client, substation['last_seen'])
 
-def fetchMeasurements(access_token, device_id, module_id, measurement_type, station_name, module_name, client):
+def fetchMeasurements(access_token, device_id, module_id, measurement_type, station_name, module_name, client, last_update):
     get_latest_timestamp_query = "SELECT value FROM %s WHERE station='%s' AND module='%s' ORDER BY time DESC LIMIT 1"%(measurement_type, station_name, module_name)
     result = client.query(get_latest_timestamp_query, database='netatmo')
 
@@ -123,6 +123,10 @@ def fetchMeasurements(access_token, device_id, module_id, measurement_type, stat
     for point in points:
         time = int(datetime.strptime(point['time'], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc).timestamp())
         break
+
+    if last_update <= time:
+        print('No value to update')
+        return
 
     time += 1
     measurements = getMeasure(access_token, device_id, module_id, measurement_type, time)
@@ -157,8 +161,8 @@ def fetchMeasurements(access_token, device_id, module_id, measurement_type, stat
         database='netatmo'
     ):
         print('%i points written - %s, %s, %s - start %s - end %s'%(len(data), station_name, module_name, measurement_type, datetime.fromtimestamp(min_time).isoformat(), datetime.fromtimestamp(max_time).isoformat()))
-        if len(data) == 102244:
-            fetchMeasurements(access_token, device_id, module_id, measurement_type, station_name, module_name, client)
+        if len(data) == 1024:
+            fetchMeasurements(access_token, device_id, module_id, measurement_type, station_name, module_name, client, last_update)
     else:
         print('write failed')
 
