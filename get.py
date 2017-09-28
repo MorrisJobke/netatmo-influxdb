@@ -115,7 +115,11 @@ def iterateStations(access_token):
         for substation in station['modules']:
             printStation(substation)
             for measurement_type in substation['data_type']:
-                fetchMeasurements(access_token, station['_id'], substation['_id'], measurement_type, station['station_name'], substation['module_name'], client, substation['last_seen'])
+                if 'module_name' in substation:
+                    name = substation['module_name']
+                else:
+                    name = substation['_id']
+                fetchMeasurements(access_token, station['_id'], substation['_id'], measurement_type, station['station_name'], name, client, substation['last_seen'])
 
 def fetchMeasurements(access_token, device_id, module_id, measurement_type, station_name, module_name, client, last_update):
     get_latest_timestamp_query = "SELECT value FROM %s WHERE station='%s' AND module='%s' ORDER BY time DESC LIMIT 1"%(measurement_type, station_name, module_name)
