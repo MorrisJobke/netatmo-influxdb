@@ -80,7 +80,10 @@ def printStation(station):
         indent = ''
         last_seen = station['last_status_store']
     else:
-        name = station['module_name']
+        if 'module_name' in station:
+            name = station['module_name']
+        else:
+            name = station['_id']
         indent = '\t'
         last_seen = station['last_seen']
 
